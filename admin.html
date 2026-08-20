@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Work+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
+<script src="social-icons.js"></script>
 <style>
   :root{
     --primary:#091b16;
@@ -116,6 +117,11 @@
     display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;
   }
   .icon-action:hover{background:var(--surface-container);}
+  .icon-preview{
+    width:32px;height:32px;border-radius:50%;background:var(--primary);color:#fff;
+    display:flex;align-items:center;justify-content:center;flex:none;
+  }
+  .icon-preview svg{width:16px;height:16px;}
 
   .toggle{position:relative;width:38px;height:22px;flex:none;}
   .toggle input{opacity:0;width:0;height:0;}
@@ -182,7 +188,7 @@
   <main>
     <div class="tabs">
       <button class="tab-btn active" data-tab="links">Links</button>
-      <button class="tab-btn" data-tab="updates">Atualizações</button>
+      <button class="tab-btn" data-tab="socials">Redes Sociais</button>
     </div>
 
     <!-- ---------- LINKS PANEL ---------- -->
@@ -194,11 +200,11 @@
           <div class="form-row cols-2">
             <div class="field">
               <label for="link-title">Título</label>
-              <input id="link-title" required placeholder="Ex: Instagram">
+              <input id="link-title" required placeholder="Ex: Site oficial">
             </div>
             <div class="field">
               <label for="link-icon">Ícone (emoji, opcional)</label>
-              <input id="link-icon" placeholder="📸">
+              <input id="link-icon" placeholder="🌐">
             </div>
           </div>
           <div class="field">
@@ -221,34 +227,36 @@
       <div id="linksList"></div>
     </section>
 
-    <!-- ---------- UPDATES PANEL ---------- -->
-    <section id="panel-updates" class="panel">
+    <!-- ---------- SOCIALS PANEL ---------- -->
+    <section id="panel-socials" class="panel">
       <div class="card">
-        <h2 id="updateFormTitle">Nova atualização</h2>
-        <form id="updateForm">
-          <input type="hidden" id="update-id">
-          <div class="field">
-            <label for="update-title">Título</label>
-            <input id="update-title" required placeholder="Ex: Bem-vindo!">
-          </div>
-          <div class="field">
-            <label for="update-content">Texto</label>
-            <textarea id="update-content" rows="3" placeholder="Conteúdo da atualização..."></textarea>
+        <h2 id="socialFormTitle">Adicionar rede social</h2>
+        <form id="socialForm">
+          <input type="hidden" id="social-id">
+          <div class="form-row cols-2">
+            <div class="field">
+              <label for="social-platform">Rede</label>
+              <select id="social-platform" required></select>
+            </div>
+            <div class="field">
+              <label for="social-url">URL / link</label>
+              <input id="social-url" type="url" required placeholder="https://...">
+            </div>
           </div>
           <div class="form-row cols-2" style="align-items:end;">
             <div class="field">
-              <label for="update-link">Link "saiba mais" (opcional)</label>
-              <input id="update-link" type="url" placeholder="https://...">
+              <label for="social-position">Posição (ordem)</label>
+              <input id="social-position" type="number" value="0">
             </div>
             <div class="field" style="display:flex;gap:10px;">
-              <button type="submit" class="btn btn-primary" style="width:auto;flex:1;">Publicar</button>
-              <button type="button" id="update-cancel-edit" class="btn btn-ghost" style="display:none;">Cancelar</button>
+              <button type="submit" class="btn btn-primary" style="width:auto;flex:1;">Salvar</button>
+              <button type="button" id="social-cancel-edit" class="btn btn-ghost" style="display:none;">Cancelar</button>
             </div>
           </div>
         </form>
       </div>
 
-      <div id="updatesList"></div>
+      <div id="socialsList"></div>
     </section>
   </main>
 </div>
@@ -284,10 +292,6 @@
     div.textContent = str ?? "";
     return div.innerHTML;
   }
-  function formatDate(iso) {
-    try { return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }); }
-    catch (e) { return ""; }
-  }
 
   // ---------- Auth ----------
   async function checkSession() {
@@ -298,7 +302,7 @@
       dashboard.style.display = 'block';
       userEmailEl.textContent = session.user.email;
       loadLinks();
-      loadUpdates();
+      loadSocials();
     } else {
       loginScreen.style.display = 'flex';
       dashboard.style.display = 'none';
@@ -425,90 +429,101 @@
     });
   }
 
-  // ---------- UPDATES CRUD ----------
-  const updateForm = document.getElementById('updateForm');
-  const updateCancelBtn = document.getElementById('update-cancel-edit');
+  // ---------- SOCIALS CRUD ----------
+  const socialForm = document.getElementById('socialForm');
+  const socialCancelBtn = document.getElementById('social-cancel-edit');
+  const socialPlatformSelect = document.getElementById('social-platform');
 
-  function resetUpdateForm() {
-    updateForm.reset();
-    document.getElementById('update-id').value = '';
-    document.getElementById('updateFormTitle').textContent = 'Nova atualização';
-    updateCancelBtn.style.display = 'none';
+  // Popula o <select> de redes a partir do social-icons.js (fonte única de verdade)
+  socialPlatformSelect.innerHTML = Object.entries(SOCIAL_PLATFORMS)
+    .map(([key, p]) => `<option value="${key}">${escapeHtml(p.label)}</option>`)
+    .join('');
+
+  function resetSocialForm() {
+    socialForm.reset();
+    document.getElementById('social-id').value = '';
+    document.getElementById('socialFormTitle').textContent = 'Adicionar rede social';
+    socialCancelBtn.style.display = 'none';
   }
-  updateCancelBtn.addEventListener('click', resetUpdateForm);
+  socialCancelBtn.addEventListener('click', resetSocialForm);
 
-  updateForm.addEventListener('submit', async (e) => {
+  socialForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const id = document.getElementById('update-id').value;
+    const id = document.getElementById('social-id').value;
     const payload = {
-      title: document.getElementById('update-title').value.trim(),
-      content: document.getElementById('update-content').value.trim(),
-      link_url: document.getElementById('update-link').value.trim() || null,
+      platform: document.getElementById('social-platform').value,
+      url: document.getElementById('social-url').value.trim(),
+      position: parseInt(document.getElementById('social-position').value || '0', 10),
     };
     let error;
     if (id) {
-      ({ error } = await sb.from('updates').update(payload).eq('id', id));
+      ({ error } = await sb.from('socials').update(payload).eq('id', id));
     } else {
-      ({ error } = await sb.from('updates').insert(payload));
+      ({ error } = await sb.from('socials').insert(payload));
     }
     if (error) { showToast('Erro ao salvar: ' + error.message); return; }
-    showToast(id ? 'Atualização editada!' : 'Atualização publicada!');
-    resetUpdateForm();
-    loadUpdates();
+    showToast(id ? 'Rede social atualizada!' : 'Rede social adicionada!');
+    resetSocialForm();
+    loadSocials();
   });
 
-  async function loadUpdates() {
-    const listEl = document.getElementById('updatesList');
-    const { data, error } = await sb.from('updates').select('*').order('published_at', { ascending: false });
-    if (error) { listEl.innerHTML = `<div class="empty-state">Erro ao carregar atualizações.</div>`; return; }
-    if (!data || data.length === 0) { listEl.innerHTML = `<div class="empty-state">Nenhuma atualização publicada ainda.</div>`; return; }
+  async function loadSocials() {
+    const listEl = document.getElementById('socialsList');
+    const { data, error } = await sb.from('socials').select('*').order('position', { ascending: true });
+    if (error) { listEl.innerHTML = `<div class="empty-state">Erro ao carregar redes sociais.</div>`; return; }
+    if (!data || data.length === 0) { listEl.innerHTML = `<div class="empty-state">Nenhuma rede social cadastrada ainda.</div>`; return; }
 
-    listEl.innerHTML = data.map(u => `
-      <div class="item-row ${u.active ? '' : 'inactive'}">
-        <span class="icon-badge">📝</span>
+    listEl.innerHTML = data.map(s => {
+      const platform = SOCIAL_PLATFORMS[s.platform];
+      const icon = platform ? platform.svg : SOCIAL_PLATFORMS.site.svg;
+      const label = platform ? platform.label : s.platform;
+      return `
+      <div class="item-row ${s.active ? '' : 'inactive'}">
+        <span class="icon-preview">${icon}</span>
         <div class="item-main">
-          <div class="title">${escapeHtml(u.title)}</div>
-          <div class="sub">${formatDate(u.published_at)}${u.content ? ' · ' + escapeHtml(u.content) : ''}</div>
+          <div class="title">${escapeHtml(label)}</div>
+          <div class="sub">${escapeHtml(s.url)} · posição ${s.position}</div>
         </div>
         <label class="toggle" title="Ativo/inativo">
-          <input type="checkbox" ${u.active ? 'checked' : ''} data-toggle-update="${u.id}">
+          <input type="checkbox" ${s.active ? 'checked' : ''} data-toggle-social="${s.id}">
           <span class="slider"></span>
         </label>
         <div class="actions">
-          <button class="icon-action" data-edit-update="${u.id}" title="Editar">✏️</button>
-          <button class="icon-action" data-delete-update="${u.id}" title="Excluir">🗑️</button>
+          <button class="icon-action" data-edit-social="${s.id}" title="Editar">✏️</button>
+          <button class="icon-action" data-delete-social="${s.id}" title="Excluir">🗑️</button>
         </div>
       </div>
-    `).join('');
+    `;
+    }).join('');
 
-    listEl.querySelectorAll('[data-toggle-update]').forEach(el => {
+    listEl.querySelectorAll('[data-toggle-social]').forEach(el => {
       el.addEventListener('change', async () => {
-        const id = el.getAttribute('data-toggle-update');
-        await sb.from('updates').update({ active: el.checked }).eq('id', id);
+        const id = el.getAttribute('data-toggle-social');
+        await sb.from('socials').update({ active: el.checked }).eq('id', id);
         showToast('Status atualizado!');
-        loadUpdates();
+        loadSocials();
       });
     });
-    listEl.querySelectorAll('[data-edit-update]').forEach(el => {
+    listEl.querySelectorAll('[data-edit-social]').forEach(el => {
       el.addEventListener('click', () => {
-        const item = data.find(x => x.id === el.getAttribute('data-edit-update'));
+        const item = data.find(x => x.id === el.getAttribute('data-edit-social'));
         if (!item) return;
-        document.getElementById('update-id').value = item.id;
-        document.getElementById('update-title').value = item.title;
-        document.getElementById('update-content').value = item.content || '';
-        document.getElementById('update-link').value = item.link_url || '';
-        document.getElementById('updateFormTitle').textContent = 'Editar atualização';
-        updateCancelBtn.style.display = 'inline-flex';
+        document.getElementById('social-id').value = item.id;
+        document.getElementById('social-platform').value = item.platform;
+        document.getElementById('social-url').value = item.url;
+        document.getElementById('social-position').value = item.position;
+        document.getElementById('socialFormTitle').textContent = 'Editar rede social';
+        socialCancelBtn.style.display = 'inline-flex';
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });
     });
-    listEl.querySelectorAll('[data-delete-update]').forEach(el => {
+    listEl.querySelectorAll('[data-delete-social]').forEach(el => {
       el.addEventListener('click', async () => {
-        if (!confirm('Excluir esta atualização? Essa ação não pode ser desfeita.')) return;
-        const id = el.getAttribute('data-delete-update');
-        await sb.from('updates').delete().eq('id', id);
-        showToast('Atualização excluída.');
-        loadUpdates();
+        if (!confirm('Excluir esta rede social? Essa ação não pode ser desfeita.')) return;
+        const id = el.getAttribute('data-delete-social');
+        await sb.from('socials').delete().eq('id', id);
+        showToast('Rede social excluída.');
+        loadSocials();
       });
     });
   }

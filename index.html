@@ -1,6 +1,24 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '1416319337049343');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=1416319337049343&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Soldado Nailson 1001 — Links</title>
@@ -10,6 +28,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Work+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
+<script src="social-icons.js"></script>
 <style>
   :root{
     --primary:#091b16;
@@ -56,7 +75,17 @@
   .tagline{color:var(--inverse-primary);text-align:center;font-size:14px;margin-top:6px;}
   .bio{color:var(--inverse-primary);text-align:center;font-size:13.5px;margin-top:14px;line-height:1.5;opacity:.9;}
 
-  .links-list{margin-top:28px;display:flex;flex-direction:column;gap:12px;}
+  .socials-row{display:flex;justify-content:center;gap:12px;margin-top:20px;flex-wrap:wrap;}
+  .social-icon-btn{
+    width:46px;height:46px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);
+    color:#fff;transition:transform .15s ease, background .15s ease, border-color .15s ease;
+  }
+  .social-icon-btn svg{width:20px;height:20px;}
+  .social-icon-btn:hover{background:rgba(141,248,115,.16);border-color:rgba(141,248,115,.45);transform:translateY(-2px);}
+
+  .links-list{margin-top:26px;display:flex;flex-direction:column;gap:12px;}
   .link-btn{
     display:flex;align-items:center;gap:12px;
     background:rgba(255,255,255,.06);
@@ -70,23 +99,9 @@
   .link-btn .ico{font-size:19px;width:26px;text-align:center;flex:none;}
   .link-btn .arrow{margin-left:auto;opacity:.5;flex:none;}
 
-  .section-label{
-    color:var(--secondary-container);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;
-    margin:36px 0 14px;display:flex;align-items:center;gap:10px;
-  }
-  .section-label::after{content:"";flex:1;height:1px;background:rgba(255,255,255,.14);}
-
-  .update-card{
-    background:var(--primary-container);border:1px solid rgba(255,255,255,.08);
-    border-radius:14px;padding:16px 18px;margin-bottom:12px;
-  }
-  .update-card .date{color:var(--secondary-container);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;}
-  .update-card h3{color:#fff;font-size:15.5px;font-weight:700;margin-top:6px;}
-  .update-card p{color:var(--inverse-primary);font-size:13.5px;margin-top:6px;line-height:1.5;}
-  .update-card a{color:var(--secondary-container);font-size:12.5px;font-weight:700;display:inline-block;margin-top:8px;text-decoration:none;border-bottom:1px solid rgba(141,248,115,.5);}
-
   .empty-state{color:var(--inverse-primary);font-size:13px;text-align:center;padding:18px;opacity:.7;}
   .skeleton{background:rgba(255,255,255,.08);border-radius:14px;height:54px;margin-bottom:12px;animation:pulse 1.4s ease-in-out infinite;}
+  .skeleton.round{border-radius:50%;width:46px;height:46px;display:inline-block;margin:0 6px;}
   @keyframes pulse{0%,100%{opacity:.5;}50%{opacity:1;}}
 
   footer{margin-top:44px;text-align:center;}
@@ -112,15 +127,16 @@
   <p class="tagline">São Sebastião do Passé · Bahia · Republicanos</p>
   <p class="bio">Vereador mais votado do município em 2024. Agora, candidato a Deputado Federal pela Bahia. Todos os canais oficiais da campanha estão aqui embaixo 👇</p>
 
+  <div id="socialsRow" class="socials-row">
+    <span class="skeleton round"></span>
+    <span class="skeleton round"></span>
+    <span class="skeleton round"></span>
+  </div>
+
   <div id="linksList" class="links-list">
     <div class="skeleton"></div>
     <div class="skeleton"></div>
     <div class="skeleton"></div>
-  </div>
-
-  <div class="section-label">Últimas atualizações</div>
-  <div id="updatesList">
-    <div class="skeleton" style="height:96px;"></div>
   </div>
 
   <footer>
@@ -132,7 +148,7 @@
 
 <script>
   const linksListEl = document.getElementById('linksList');
-  const updatesListEl = document.getElementById('updatesList');
+  const socialsRowEl = document.getElementById('socialsRow');
   const configWarningEl = document.getElementById('configWarning');
 
   const iconFallback = "🔗";
@@ -141,12 +157,6 @@
     const div = document.createElement('div');
     div.textContent = str ?? "";
     return div.innerHTML;
-  }
-
-  function formatDate(iso) {
-    try {
-      return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
-    } catch (e) { return ""; }
   }
 
   async function loadLinks(sb) {
@@ -173,42 +183,39 @@
     `).join('');
   }
 
-  async function loadUpdates(sb) {
+  async function loadSocials(sb) {
     const { data, error } = await sb
-      .from('updates')
+      .from('socials')
       .select('*')
       .eq('active', true)
-      .order('published_at', { ascending: false })
-      .limit(6);
+      .order('position', { ascending: true });
 
-    if (error) {
-      updatesListEl.innerHTML = '<div class="empty-state">Não foi possível carregar as atualizações agora.</div>';
+    if (error || !data || data.length === 0) {
+      socialsRowEl.innerHTML = '';
       return;
     }
-    if (!data || data.length === 0) {
-      updatesListEl.innerHTML = '<div class="empty-state">Nenhuma atualização publicada ainda.</div>';
-      return;
-    }
-    updatesListEl.innerHTML = data.map(u => `
-      <div class="update-card">
-        <div class="date">${formatDate(u.published_at)}</div>
-        <h3>${escapeHtml(u.title)}</h3>
-        ${u.content ? `<p>${escapeHtml(u.content)}</p>` : ''}
-        ${u.link_url ? `<a href="${escapeHtml(u.link_url)}" target="_blank" rel="noopener">Saiba mais →</a>` : ''}
-      </div>
-    `).join('');
+    socialsRowEl.innerHTML = data.map(s => {
+      const platform = SOCIAL_PLATFORMS[s.platform];
+      const icon = platform ? platform.svg : SOCIAL_PLATFORMS.site.svg;
+      const label = platform ? platform.label : s.platform;
+      return `
+        <a class="social-icon-btn" href="${escapeHtml(s.url)}" target="_blank" rel="noopener" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">
+          ${icon}
+        </a>
+      `;
+    }).join('');
   }
 
   (function init() {
     if (!SUPABASE_URL || SUPABASE_URL.startsWith("COLE_AQUI") || !SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.startsWith("COLE_AQUI")) {
       configWarningEl.style.display = 'block';
       linksListEl.innerHTML = '<div class="empty-state">Configure o Supabase para ver os links.</div>';
-      updatesListEl.innerHTML = '';
+      socialsRowEl.innerHTML = '';
       return;
     }
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     loadLinks(sb);
-    loadUpdates(sb);
+    loadSocials(sb);
   })();
 </script>
 </body>
