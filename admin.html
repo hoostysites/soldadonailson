@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel Admin — Soldado Nailson</title>
+<link rel="icon" href="images/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Work+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<style>
+  :root{
+    --primary:#091b16;
+    --primary-container:#1e302a;
+    --secondary:#0b6e00;
+    --secondary-dark:#0c7300;
+    --secondary-container:#8df873;
+    --surface:#f7faf9;
+    --surface-container:#ebeeed;
+    --surface-container-high:#e6e9e8;
+    --on-surface:#181c1c;
+    --on-surface-variant:#424845;
+    --outline-variant:#c2c8c4;
+    --error:#ba1a1a;
+    --error-container:#ffdad6;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    font-family:'Work Sans',sans-serif;
+    background:var(--surface);
+    color:var(--on-surface);
+    min-height:100vh;
+  }
+  h1,h2,h3,.font-display{font-family:'Montserrat',sans-serif;}
+  .font-label{font-family:'Space Grotesk',sans-serif;}
+
+  /* ---------- LOGIN ---------- */
+  #loginScreen{
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    background:var(--primary);
+    background-image:radial-gradient(900px 500px at 50% -10%, rgba(11,110,0,.35), transparent 60%);
+    padding:20px;
+  }
+  .login-card{
+    background:#fff;border-radius:18px;padding:36px 32px;width:100%;max-width:380px;
+    box-shadow:0 30px 70px -25px rgba(0,0,0,.6);
+  }
+  .login-card img{width:56px;display:block;margin:0 auto 18px;}
+  .login-card h1{font-size:19px;text-align:center;margin-bottom:4px;}
+  .login-card p.sub{font-size:12.5px;color:var(--on-surface-variant);text-align:center;margin-bottom:22px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12px;font-weight:700;margin-bottom:6px;color:var(--on-surface);}
+  .field input, .field textarea{
+    width:100%;padding:11px 13px;border-radius:10px;border:1.5px solid var(--outline-variant);
+    font-family:'Work Sans',sans-serif;font-size:14px;background:#fafcfb;
+  }
+  .field input:focus, .field textarea:focus{outline:2px solid var(--secondary);outline-offset:1px;border-color:var(--secondary);}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    padding:12px 20px;border-radius:10px;font-weight:700;font-size:14px;border:none;cursor:pointer;
+    font-family:'Work Sans',sans-serif;transition:transform .12s ease, opacity .12s ease;
+  }
+  .btn:hover{transform:translateY(-1px);}
+  .btn-primary{background:var(--secondary);color:#fff;width:100%;}
+  .btn-ghost{background:transparent;color:var(--on-surface-variant);border:1.5px solid var(--outline-variant);}
+  .btn-danger{background:var(--error-container);color:var(--error);}
+  .btn-sm{padding:8px 14px;font-size:12.5px;}
+  .error-msg{background:var(--error-container);color:var(--error);font-size:12.5px;padding:10px 12px;border-radius:8px;margin-bottom:14px;display:none;}
+
+  #configWarning{
+    background:var(--error-container);color:var(--error);font-size:13px;padding:12px 16px;
+    border-radius:10px;margin-bottom:16px;line-height:1.5;
+  }
+
+  /* ---------- DASHBOARD ---------- */
+  #dashboard{display:none;}
+  header.topbar{
+    background:var(--primary);color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;
+  }
+  header.topbar .brand{display:flex;align-items:center;gap:10px;}
+  header.topbar .brand img{height:30px;}
+  header.topbar .brand span{font-size:13px;color:var(--secondary-container);font-weight:700;letter-spacing:.04em;}
+  header.topbar .userinfo{display:flex;align-items:center;gap:14px;font-size:12.5px;color:#c2c8c4;}
+
+  main{max-width:840px;margin:0 auto;padding:28px 20px 60px;}
+
+  .tabs{display:flex;gap:8px;margin-bottom:22px;}
+  .tab-btn{
+    padding:10px 20px;border-radius:999px;font-weight:700;font-size:13.5px;border:1.5px solid var(--outline-variant);
+    background:#fff;color:var(--on-surface-variant);cursor:pointer;font-family:'Work Sans',sans-serif;
+  }
+  .tab-btn.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+
+  .panel{display:none;}
+  .panel.active{display:block;}
+
+  .card{background:#fff;border:1px solid var(--outline-variant);border-radius:14px;padding:20px;margin-bottom:18px;}
+  .card h2{font-size:16px;margin-bottom:16px;}
+
+  .form-row{display:grid;grid-template-columns:1fr;gap:12px;}
+  @media (min-width:640px){ .form-row.cols-2{grid-template-columns:1fr 1fr;} .form-row.cols-3{grid-template-columns:1fr 1fr 1fr;} }
+
+  .item-row{
+    display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--outline-variant);
+    border-radius:12px;margin-bottom:10px;background:#fff;
+  }
+  .item-row.inactive{opacity:.5;}
+  .item-row .icon-badge{font-size:18px;width:28px;text-align:center;flex:none;}
+  .item-row .item-main{flex:1;min-width:0;}
+  .item-row .item-main .title{font-weight:700;font-size:14px;}
+  .item-row .item-main .sub{font-size:11.5px;color:var(--on-surface-variant);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .item-row .actions{display:flex;align-items:center;gap:6px;flex:none;}
+  .icon-action{
+    width:30px;height:30px;border-radius:8px;border:1px solid var(--outline-variant);background:#fff;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;
+  }
+  .icon-action:hover{background:var(--surface-container);}
+
+  .toggle{position:relative;width:38px;height:22px;flex:none;}
+  .toggle input{opacity:0;width:0;height:0;}
+  .toggle .slider{
+    position:absolute;inset:0;background:var(--outline-variant);border-radius:999px;cursor:pointer;transition:.2s;
+  }
+  .toggle .slider::before{
+    content:"";position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;
+  }
+  .toggle input:checked + .slider{background:var(--secondary);}
+  .toggle input:checked + .slider::before{transform:translateX(16px);}
+
+  .empty-state{color:var(--on-surface-variant);font-size:13px;text-align:center;padding:24px;}
+  .toast{
+    position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+    background:var(--primary);color:#fff;padding:12px 22px;border-radius:999px;font-size:13px;font-weight:600;
+    box-shadow:0 10px 30px -10px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .25s ease;z-index:100;
+  }
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+
+<div id="configWarningWrap" style="max-width:840px;margin:20px auto 0;padding:0 20px;">
+  <div id="configWarning" style="display:none;">
+    ⚠️ O Supabase ainda não foi configurado. Preencha <code>SUPABASE_URL</code> e <code>SUPABASE_ANON_KEY</code> no arquivo <code>config.js</code> antes de usar o painel.
+  </div>
+</div>
+
+<!-- ===================== LOGIN ===================== -->
+<div id="loginScreen">
+  <div class="login-card">
+    <img src="images/logo.png" alt="Logo">
+    <h1>Painel Admin</h1>
+    <p class="sub">Soldado Nailson — Link na Bio</p>
+    <div id="loginError" class="error-msg"></div>
+    <form id="loginForm">
+      <div class="field">
+        <label for="email">E-mail</label>
+        <input id="email" type="email" required autocomplete="username">
+      </div>
+      <div class="field">
+        <label for="password">Senha</label>
+        <input id="password" type="password" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn btn-primary">Entrar</button>
+    </form>
+  </div>
+</div>
+
+<!-- ===================== DASHBOARD ===================== -->
+<div id="dashboard">
+  <header class="topbar">
+    <div class="brand">
+      <img src="images/logo.png" alt="Logo">
+      <span>PAINEL ADMIN</span>
+    </div>
+    <div class="userinfo">
+      <span id="userEmail"></span>
+      <button class="btn btn-ghost btn-sm" id="logoutBtn" style="color:#fff;border-color:rgba(255,255,255,.3);">Sair</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="links">Links</button>
+      <button class="tab-btn" data-tab="updates">Atualizações</button>
+    </div>
+
+    <!-- ---------- LINKS PANEL ---------- -->
+    <section id="panel-links" class="panel active">
+      <div class="card">
+        <h2 id="linkFormTitle">Adicionar link</h2>
+        <form id="linkForm">
+          <input type="hidden" id="link-id">
+          <div class="form-row cols-2">
+            <div class="field">
+              <label for="link-title">Título</label>
+              <input id="link-title" required placeholder="Ex: Instagram">
+            </div>
+            <div class="field">
+              <label for="link-icon">Ícone (emoji, opcional)</label>
+              <input id="link-icon" placeholder="📸">
+            </div>
+          </div>
+          <div class="field">
+            <label for="link-url">URL</label>
+            <input id="link-url" type="url" required placeholder="https://...">
+          </div>
+          <div class="form-row cols-2" style="align-items:end;">
+            <div class="field">
+              <label for="link-position">Posição (ordem)</label>
+              <input id="link-position" type="number" value="0">
+            </div>
+            <div class="field" style="display:flex;gap:10px;">
+              <button type="submit" class="btn btn-primary" style="width:auto;flex:1;">Salvar</button>
+              <button type="button" id="link-cancel-edit" class="btn btn-ghost" style="display:none;">Cancelar</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div id="linksList"></div>
+    </section>
+
+    <!-- ---------- UPDATES PANEL ---------- -->
+    <section id="panel-updates" class="panel">
+      <div class="card">
+        <h2 id="updateFormTitle">Nova atualização</h2>
+        <form id="updateForm">
+          <input type="hidden" id="update-id">
+          <div class="field">
+            <label for="update-title">Título</label>
+            <input id="update-title" required placeholder="Ex: Bem-vindo!">
+          </div>
+          <div class="field">
+            <label for="update-content">Texto</label>
+            <textarea id="update-content" rows="3" placeholder="Conteúdo da atualização..."></textarea>
+          </div>
+          <div class="form-row cols-2" style="align-items:end;">
+            <div class="field">
+              <label for="update-link">Link "saiba mais" (opcional)</label>
+              <input id="update-link" type="url" placeholder="https://...">
+            </div>
+            <div class="field" style="display:flex;gap:10px;">
+              <button type="submit" class="btn btn-primary" style="width:auto;flex:1;">Publicar</button>
+              <button type="button" id="update-cancel-edit" class="btn btn-ghost" style="display:none;">Cancelar</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div id="updatesList"></div>
+    </section>
+  </main>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+  let sb = null;
+
+  // ---------- Config check ----------
+  const configOk = SUPABASE_URL && !SUPABASE_URL.startsWith("COLE_AQUI") &&
+                    SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.startsWith("COLE_AQUI");
+  if (!configOk) {
+    document.getElementById('configWarning').style.display = 'block';
+  } else {
+    sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+
+  const loginScreen = document.getElementById('loginScreen');
+  const dashboard = document.getElementById('dashboard');
+  const loginForm = document.getElementById('loginForm');
+  const loginError = document.getElementById('loginError');
+  const userEmailEl = document.getElementById('userEmail');
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+  }
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str ?? "";
+    return div.innerHTML;
+  }
+  function formatDate(iso) {
+    try { return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }); }
+    catch (e) { return ""; }
+  }
+
+  // ---------- Auth ----------
+  async function checkSession() {
+    if (!sb) return;
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) {
+      loginScreen.style.display = 'none';
+      dashboard.style.display = 'block';
+      userEmailEl.textContent = session.user.email;
+      loadLinks();
+      loadUpdates();
+    } else {
+      loginScreen.style.display = 'flex';
+      dashboard.style.display = 'none';
+    }
+  }
+
+  loginForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!sb) { loginError.textContent = 'Configure o Supabase em config.js primeiro.'; loginError.style.display = 'block'; return; }
+    loginError.style.display = 'none';
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) {
+      loginError.textContent = 'E-mail ou senha incorretos.';
+      loginError.style.display = 'block';
+      return;
+    }
+    checkSession();
+  });
+
+  document.getElementById('logoutBtn')?.addEventListener('click', async () => {
+    await sb.auth.signOut();
+    checkSession();
+  });
+
+  // ---------- Tabs ----------
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  // ---------- LINKS CRUD ----------
+  const linkForm = document.getElementById('linkForm');
+  const linkCancelBtn = document.getElementById('link-cancel-edit');
+
+  function resetLinkForm() {
+    linkForm.reset();
+    document.getElementById('link-id').value = '';
+    document.getElementById('linkFormTitle').textContent = 'Adicionar link';
+    linkCancelBtn.style.display = 'none';
+  }
+  linkCancelBtn.addEventListener('click', resetLinkForm);
+
+  linkForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('link-id').value;
+    const payload = {
+      title: document.getElementById('link-title').value.trim(),
+      url: document.getElementById('link-url').value.trim(),
+      icon: document.getElementById('link-icon').value.trim(),
+      position: parseInt(document.getElementById('link-position').value || '0', 10),
+    };
+    let error;
+    if (id) {
+      ({ error } = await sb.from('links').update(payload).eq('id', id));
+    } else {
+      ({ error } = await sb.from('links').insert(payload));
+    }
+    if (error) { showToast('Erro ao salvar: ' + error.message); return; }
+    showToast(id ? 'Link atualizado!' : 'Link adicionado!');
+    resetLinkForm();
+    loadLinks();
+  });
+
+  async function loadLinks() {
+    const listEl = document.getElementById('linksList');
+    const { data, error } = await sb.from('links').select('*').order('position', { ascending: true });
+    if (error) { listEl.innerHTML = `<div class="empty-state">Erro ao carregar links.</div>`; return; }
+    if (!data || data.length === 0) { listEl.innerHTML = `<div class="empty-state">Nenhum link cadastrado ainda.</div>`; return; }
+
+    listEl.innerHTML = data.map(l => `
+      <div class="item-row ${l.active ? '' : 'inactive'}">
+        <span class="icon-badge">${escapeHtml(l.icon || '🔗')}</span>
+        <div class="item-main">
+          <div class="title">${escapeHtml(l.title)}</div>
+          <div class="sub">${escapeHtml(l.url)} · posição ${l.position}</div>
+        </div>
+        <label class="toggle" title="Ativo/inativo">
+          <input type="checkbox" ${l.active ? 'checked' : ''} data-toggle-link="${l.id}">
+          <span class="slider"></span>
+        </label>
+        <div class="actions">
+          <button class="icon-action" data-edit-link="${l.id}" title="Editar">✏️</button>
+          <button class="icon-action" data-delete-link="${l.id}" title="Excluir">🗑️</button>
+        </div>
+      </div>
+    `).join('');
+
+    listEl.querySelectorAll('[data-toggle-link]').forEach(el => {
+      el.addEventListener('change', async () => {
+        const id = el.getAttribute('data-toggle-link');
+        await sb.from('links').update({ active: el.checked }).eq('id', id);
+        showToast('Status atualizado!');
+        loadLinks();
+      });
+    });
+    listEl.querySelectorAll('[data-edit-link]').forEach(el => {
+      el.addEventListener('click', () => {
+        const item = data.find(x => x.id === el.getAttribute('data-edit-link'));
+        if (!item) return;
+        document.getElementById('link-id').value = item.id;
+        document.getElementById('link-title').value = item.title;
+        document.getElementById('link-url').value = item.url;
+        document.getElementById('link-icon').value = item.icon || '';
+        document.getElementById('link-position').value = item.position;
+        document.getElementById('linkFormTitle').textContent = 'Editar link';
+        linkCancelBtn.style.display = 'inline-flex';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
+    listEl.querySelectorAll('[data-delete-link]').forEach(el => {
+      el.addEventListener('click', async () => {
+        if (!confirm('Excluir este link? Essa ação não pode ser desfeita.')) return;
+        const id = el.getAttribute('data-delete-link');
+        await sb.from('links').delete().eq('id', id);
+        showToast('Link excluído.');
+        loadLinks();
+      });
+    });
+  }
+
+  // ---------- UPDATES CRUD ----------
+  const updateForm = document.getElementById('updateForm');
+  const updateCancelBtn = document.getElementById('update-cancel-edit');
+
+  function resetUpdateForm() {
+    updateForm.reset();
+    document.getElementById('update-id').value = '';
+    document.getElementById('updateFormTitle').textContent = 'Nova atualização';
+    updateCancelBtn.style.display = 'none';
+  }
+  updateCancelBtn.addEventListener('click', resetUpdateForm);
+
+  updateForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('update-id').value;
+    const payload = {
+      title: document.getElementById('update-title').value.trim(),
+      content: document.getElementById('update-content').value.trim(),
+      link_url: document.getElementById('update-link').value.trim() || null,
+    };
+    let error;
+    if (id) {
+      ({ error } = await sb.from('updates').update(payload).eq('id', id));
+    } else {
+      ({ error } = await sb.from('updates').insert(payload));
+    }
+    if (error) { showToast('Erro ao salvar: ' + error.message); return; }
+    showToast(id ? 'Atualização editada!' : 'Atualização publicada!');
+    resetUpdateForm();
+    loadUpdates();
+  });
+
+  async function loadUpdates() {
+    const listEl = document.getElementById('updatesList');
+    const { data, error } = await sb.from('updates').select('*').order('published_at', { ascending: false });
+    if (error) { listEl.innerHTML = `<div class="empty-state">Erro ao carregar atualizações.</div>`; return; }
+    if (!data || data.length === 0) { listEl.innerHTML = `<div class="empty-state">Nenhuma atualização publicada ainda.</div>`; return; }
+
+    listEl.innerHTML = data.map(u => `
+      <div class="item-row ${u.active ? '' : 'inactive'}">
+        <span class="icon-badge">📝</span>
+        <div class="item-main">
+          <div class="title">${escapeHtml(u.title)}</div>
+          <div class="sub">${formatDate(u.published_at)}${u.content ? ' · ' + escapeHtml(u.content) : ''}</div>
+        </div>
+        <label class="toggle" title="Ativo/inativo">
+          <input type="checkbox" ${u.active ? 'checked' : ''} data-toggle-update="${u.id}">
+          <span class="slider"></span>
+        </label>
+        <div class="actions">
+          <button class="icon-action" data-edit-update="${u.id}" title="Editar">✏️</button>
+          <button class="icon-action" data-delete-update="${u.id}" title="Excluir">🗑️</button>
+        </div>
+      </div>
+    `).join('');
+
+    listEl.querySelectorAll('[data-toggle-update]').forEach(el => {
+      el.addEventListener('change', async () => {
+        const id = el.getAttribute('data-toggle-update');
+        await sb.from('updates').update({ active: el.checked }).eq('id', id);
+        showToast('Status atualizado!');
+        loadUpdates();
+      });
+    });
+    listEl.querySelectorAll('[data-edit-update]').forEach(el => {
+      el.addEventListener('click', () => {
+        const item = data.find(x => x.id === el.getAttribute('data-edit-update'));
+        if (!item) return;
+        document.getElementById('update-id').value = item.id;
+        document.getElementById('update-title').value = item.title;
+        document.getElementById('update-content').value = item.content || '';
+        document.getElementById('update-link').value = item.link_url || '';
+        document.getElementById('updateFormTitle').textContent = 'Editar atualização';
+        updateCancelBtn.style.display = 'inline-flex';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
+    listEl.querySelectorAll('[data-delete-update]').forEach(el => {
+      el.addEventListener('click', async () => {
+        if (!confirm('Excluir esta atualização? Essa ação não pode ser desfeita.')) return;
+        const id = el.getAttribute('data-delete-update');
+        await sb.from('updates').delete().eq('id', id);
+        showToast('Atualização excluída.');
+        loadUpdates();
+      });
+    });
+  }
+
+  checkSession();
+</script>
+</body>
+</html>
